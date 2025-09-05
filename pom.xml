@@ -137,6 +137,10 @@
                         </goals>
                     </execution>
                 </executions>
+                <configuration>
+                    <failOnError>true</failOnError>
+                    <nvdApiKey>${nvd.apiKey}</nvdApiKey>
+                </configuration>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
