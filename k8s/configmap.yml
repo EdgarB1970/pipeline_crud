@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: spring-boot-config
+data:
+  SPRING_DATA_CASSANDRA_CONTACT_POINTS: "cassandra-service"
+  SPRING_DATA_CASSANDRA_PORT: "9042"
+  SPRING_DATA_CASSANDRA_KEYSPACE_NAME: "pipeline_crud"
+  SPRING_KAFKA_BOOTSTRAP_SERVERS: "kafka-service:9092"

@@ -1,0 +1,38 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cassandra
+  labels:
+    app: cassandra
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: cassandra
+  template:
+    metadata:
+      labels:
+        app: cassandra
+    spec:
+      containers:
+        - name: cassandra
+          image: cassandra:4.0
+          ports:
+            - containerPort: 9042
+          env:
+            - name: CASSANDRA_START_RPC
+              value: "true"
+            - name: CASSANDRA_AUTHENTICATOR
+              value: "PasswordAuthenticator"
+            - name: CASSANDRA_AUTHORIZER
+              value: "CassandraAuthorizer"
+            - name: CASSANDRA_USER
+              valueFrom:
+                secretKeyRef:
+                  name: spring-boot-secrets
+                  key: CASSANDRA_USER
+            - name: CASSANDRA_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: spring-boot-secrets
+                  key: CASSANDRA_PASSWORD
