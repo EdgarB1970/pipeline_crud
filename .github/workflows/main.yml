@@ -73,7 +73,7 @@ jobs:
           distribution: 'temurin'
           cache: maven
       - name: Run integration tests
-        run: mvn --batch-mode verify -Dtest="*Integration*" -DfailIfNoTests=false
+        run: mvn --batch-mode verify -Dtest="*Integration*"
       - name: Upload integration test results
         uses: actions/upload-artifact@v4
         if: always()
@@ -95,7 +95,7 @@ jobs:
           distribution: 'temurin'
           cache: maven
       - name: Run Dependency Check
-        run: mvn --batch-mode org.owasp:dependency-check-maven:check
+        run: mvn --batch-mode org.owasp:dependency-check-maven:check -Ddependency-check.apiKey=${{ secrets.NVD_API_KEY }}
       - name: Upload Security Report
         uses: actions/upload-artifact@v4
         if: always()
@@ -142,10 +142,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Install Minikube
-        uses: Medallia/minikube-action@v0.0.1
-        with:
-          minikube-version: 'latest'
-          kubernetes-version: '1.28.3'
+        run: |
+          curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64
+          sudo install minikube-linux-amd64 /usr/local/bin/minikube
+          minikube start --driver=none
       - name: Login to GHCR
         uses: docker/login-action@v3
         with:
