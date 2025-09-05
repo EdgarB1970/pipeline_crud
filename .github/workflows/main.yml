@@ -84,7 +84,7 @@ jobs:
   # Job de escaneo de seguridad
   security-scan:
     runs-on: ubuntu-latest
-    needs: [test-unit, test-integration]
+    needs: [ test-unit, test-integration ]
     continue-on-error: true
     steps:
       - uses: actions/checkout@v4
@@ -95,7 +95,7 @@ jobs:
           distribution: 'temurin'
           cache: maven
       - name: Run Dependency Check
-        run: mvn --batch-mode org.owasp:dependency-check-maven:check -Ddependency-check.nvd.apiKey=${{ secrets.NVD_API_KEY }}
+        run: mvn --batch-mode org.owasp:dependency-check-maven:check
       - name: Upload Security Report
         uses: actions/upload-artifact@v4
         if: always()
