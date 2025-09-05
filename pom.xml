@@ -99,7 +99,6 @@
         </dependency>
     </dependencies>
 
-
     <build>
         <plugins>
             <plugin>
@@ -114,8 +113,23 @@
                     </excludes>
                 </configuration>
             </plugin>
+            <plugin>
+                <groupId>com.google.cloud.tools</groupId>
+                <artifactId>jib-maven-plugin</artifactId>
+                <version>3.4.1</version>
+                <configuration>
+                    <from>
+                        <image>eclipse-temurin:17</image>
+                    </from>
+                    <to>
+                        <image>ghcr.io/${project.groupId}/${project.artifactId}:${project.version}</image>
+                    </to>
+                    <container>
+                        <user>1000</user>
+                    </container>
+                </configuration>
+            </plugin>
 
-            <!-- Plugin para ejecutar tests -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
@@ -127,7 +141,6 @@
                 </configuration>
             </plugin>
 
-            <!-- Plugin para tests de integración -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-failsafe-plugin</artifactId>
@@ -149,68 +162,5 @@
         </plugins>
     </build>
 
-    <!-- Para crear la imagen docker-->
-    <profiles>
-        <profile>
-            <id>generar-imagen-docker</id>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.springframework.boot</groupId>
-                        <artifactId>spring-boot-maven-plugin</artifactId>
-                        <configuration>
-                            <image>
-                                <builder>paketobuildpacks/builder-jammy-tiny:0.0.332</builder>
-                                <createdDate>now</createdDate>
-                                <env>
-                                    <BPE_APPEND_JAVA_TOOL_OPTIONS>
-                                        -XX:+UnlockExperimentalVMOptions
-                                        -XX:+UseG1GC
-                                        -XX:MaxRAMPercentage=70.0
-                                        -XX:InitiatingHeapOccupancyPercent=50
-                                        -XX:ParallelGCThreads=1
-                                        -XX:ConcGCThreads=1
-                                        -XX:G1NewSizePercent=20
-                                        -XX:G1MaxNewSizePercent=60
-                                        -XX:G1MixedGCLiveThresholdPercent=85
-                                        -XX:G1MixedGCCountTarget=4
-                                        -XX:G1HeapWastePercent=5
-                                        -XX:G1OldCSetRegionThresholdPercent=10
-                                        -XX:+UseStringDeduplication
-                                        -XX:+UseContainerSupport
-                                        -XX:MaxGCPauseMillis=200
-                                        -XX:+CompactStrings
-                                        -Djava.net.preferIPv4Stack=true
-                                        -Djava.awt.headless=true
-                                        -Dfile.encoding=UTF-8
-                                        -Duser.timezone=GMT-5
-                                        -Duser.language=es
-                                        -Duser.region=EC
-                                    </BPE_APPEND_JAVA_TOOL_OPTIONS>
-                                    <BPE_DELIM_JAVA_TOOL_OPTIONS xml:space="preserve"> </BPE_DELIM_JAVA_TOOL_OPTIONS>
-                                    <BPM_JVM_JLINK_ARGS>
-                                        --no-man-pages --no-header-files --strip-debug --compress=2
-                                    </BPM_JVM_JLINK_ARGS>
-                                    <BP_JVM_VERSION>${java.version}</BP_JVM_VERSION>
-                                    <JAVA_TOOL_OPTIONS>
-                                        -Xms32m -Xmx256m -XX:InitialRAMPercentage=40.0 -XX:MaxRAMPercentage=50.0
-                                    </JAVA_TOOL_OPTIONS>
-                                </env>
-                                <name>${project.groupId}/${project.artifactId}:${project.version}</name>
-                            </image>
-                        </configuration>
-                        <executions>
-                            <execution>
-                                <goals>
-                                    <goal>build-image</goal>
-                                </goals>
-                                <phase>package</phase>
-                            </execution>
-                        </executions>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-    </profiles>
 
 </project>
