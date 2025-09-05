@@ -121,9 +121,6 @@
                     <from>
                         <image>eclipse-temurin:17</image>
                     </from>
-                    <to>
-                        <image>ghcr.io/${project.groupId}/${project.artifactId}</image>
-                    </to>
                     <container>
                         <user>1000</user>
                     </container>
