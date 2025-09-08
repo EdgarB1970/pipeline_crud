@@ -158,22 +158,9 @@ jobs:
           sudo apt-get install -y conntrack
           curl -LO https://dl.k8s.io/release/v1.30.0/bin/linux/amd64/crictl
           sudo install -o root -g root -m 0755 crictl /usr/local/bin/crictl
-      - name: Install cri-dockerd
+      - name: Install cri-dockerd and CNI Plugins
         run: |
-          VERSION="0.3.11"
-          curl -L -o cri-dockerd-${VERSION}.amd64.tgz https://github.com/Mirantis/cri-dockerd/releases/download/v${VERSION}/cri-dockerd-${VERSION}.amd64.tgz
-          tar -xzf cri-dockerd-${VERSION}.amd64.tgz
-          sudo install -o root -g root -m 0755 cri-dockerd/cri-dockerd /usr/local/bin/cri-dockerd
-          curl -L -o cri-dockerd.service https://raw.githubusercontent.com/Mirantis/cri-dockerd/master/cri-dockerd.service
-          sudo install -o root -g root -m 0755 cri-dockerd.service /etc/systemd/system/cri-dockerd.service
-          curl -L -o cri-docker.socket https://raw.githubusercontent.com/Mirantis/cri-dockerd/v${VERSION}/packaging/cri-docker.socket
-          sudo install -o root -g root -m 0755 cri-docker.socket /etc/systemd/system/cri-docker.socket
-      - name: Install CNI Plugins
-        run: |
-          CNI_PLUGINS_VERSION="v1.4.0"
-          sudo mkdir -p /opt/cni/bin
-          curl -L -o cni-plugins.tgz "https://github.com/containernetworking/plugins/releases/download/${CNI_PLUGINS_VERSION}/cni-plugins-linux-amd64-${CNI_PLUGINS_VERSION}.tgz"
-          sudo tar -xzf cni-plugins.tgz -C /opt/cni/bin
+          curl -fsSL https://raw.githubusercontent.com/root/install_cri_dockerd.sh | sudo sh
       - name: Install Minikube
         run: |
           curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64
