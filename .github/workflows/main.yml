@@ -14,9 +14,7 @@ env:
   # Variables compartidas por todos los jobs
   APP_NAME: ${{ github.event.repository.name }}
   APP_VERSION: ${{ github.sha }}
-  KUBE_NAMESPACE: ${{ lower(replace(github.event.repository.name, '_', '-')) }}-${{ github.ref_name }}
   CI_REGISTRY_IMAGE: docker.pkg.github.com/${{ github.repository }}
-
 
 jobs:
   # Job de validación (Maven)
@@ -145,7 +143,7 @@ jobs:
           name: trivy-security-report
           path: trivy-report.txt
 
-  #  SOLUCION: Job de despliegue simplificado sin Minikube local
+  # Job de despliegue simplificado
   deploy-dev:
     runs-on: ubuntu-latest
     needs: [build, security-scan]
@@ -155,15 +153,12 @@ jobs:
       - name: Set up image name
         run: echo "IMAGE_NAME=${GITHUB_REPOSITORY,,}" >> $GITHUB_ENV
 
-      # Crear la variable KUBE_NAMESPACE de formna segura con Bash
       - name: Create Kube Namespace Variable
         run: |
-          REPO_NAME=$(echo "${{ github.event.repository.name }}" | tr '[:upper:]' '[:lower:]' | tr '_' '-')
-          REF_NAME=$(echo "${{ github.ref_name }}" | tr '[:upper:]' '[:lower:]' | tr '_' '-')
-          echo "KUBE_NAMESPACE=$REPO_NAME-$REF_NAME" >> $GITHUB_ENV
-            
+          SAFE_REPO_NAME=$(echo "${{ github.event.repository.name }}" | tr '[:upper:]' '[:lower:]' | tr '_' '-')
+          SAFE_REF_NAME=$(echo "${{ github.ref_name }}" | tr '[:upper:]' '[:lower:]' | tr '_' '-')
+          echo "KUBE_NAMESPACE=$SAFE_REPO_NAME-$SAFE_REF_NAME" >> $GITHUB_ENV
 
-      # Opción 1: Usar Minikube con action predefinida (RECOMENDADO)
       - name: Start Minikube
         uses: medyagh/setup-minikube@v0.0.16
         with:
@@ -173,19 +168,15 @@ jobs:
 
       - name: Deploy to Minikube
         run: |
-          # Sustituir variables en los manifiestos K8s
           export IMAGE_NAME=ghcr.io/${{ env.IMAGE_NAME }}:${{ github.sha }}
           export KUBE_NAMESPACE=${{ env.KUBE_NAMESPACE }}
           export APP_NAME=${{ env.APP_NAME }}
           
-          # Crear namespace
           kubectl create namespace $KUBE_NAMESPACE --dry-run=client -o yaml | kubectl apply -f -
           
-          # Aplicar manifiestos con substitución de variables
           envsubst < k8s/deployment.yaml | kubectl apply -n $KUBE_NAMESPACE -f -
           envsubst < k8s/service.yaml | kubectl apply -n $KUBE_NAMESPACE -f -
           
-          # Esperar a que el deployment esté listo
           kubectl rollout status deployment/$APP_NAME -n $KUBE_NAMESPACE --timeout=300s
 
       - name: Verify deployment
@@ -193,7 +184,6 @@ jobs:
           kubectl get pods -n ${{ env.KUBE_NAMESPACE }}
           kubectl get services -n ${{ env.KUBE_NAMESPACE }}
 
-      # Health check opcional
       - name: Health check
         run: |
           kubectl wait --for=condition=ready pod -l app=${{ env.APP_NAME }} -n ${{ env.KUBE_NAMESPACE }} --timeout=300s
