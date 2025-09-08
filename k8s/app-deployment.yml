@@ -38,6 +38,8 @@ spec:
                 secretKeyRef:
                   name: spring-boot-secrets
                   key: CASSANDRA_PASSWORD
+            - name: CASSANDRA_HOST
+              value: "cassandra"
             - name: KAFKA_SASL_USERNAME
               valueFrom:
                 secretKeyRef:
