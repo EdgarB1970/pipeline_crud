@@ -18,7 +18,6 @@ env:
   CI_REGISTRY_IMAGE: docker.pkg.github.com/${{ github.repository }}
 
 jobs:
-  # Todos los jobs deben estar indentados a este nivel
   # Job de validación (Maven)
   validate:
     runs-on: ubuntu-latest
@@ -145,64 +144,82 @@ jobs:
           name: trivy-security-report
           path: trivy-report.txt
 
-  # Job de despliegue en Kubernetes (Minikube)
+  # 🔧 SOLUCION: Job de despliegue simplificado sin Minikube local
   deploy-dev:
     runs-on: ubuntu-latest
-    needs: [build]
+    needs: [build, security-scan]
     if: github.ref == 'refs/heads/master'
     steps:
       - uses: actions/checkout@v4
-      - name: Install Minikube Dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y conntrack
-          curl -LO https://dl.k8s.io/release/v1.30.0/bin/linux/amd64/crictl
-          sudo install -o root -g root -m 0755 crictl /usr/local/bin/crictl
-      - name: Install cri-dockerd
-        run: |
-          # Instalar las dependencias necesarias para la instalación de cri-dockerd
-          sudo apt-get install -y libseccomp2
-          
-          # Descargar el paquete .deb para cri-dockerd
-          VERSION="0.3.11"
-          DEB_URL="https://github.com/Mirantis/cri-dockerd/releases/download/v${VERSION}/cri-dockerd_0.3.11.3-0.debian-bullseye_amd64.deb"
-          curl -L -o cri-dockerd.deb "$DEB_URL"
-          
-          # Instalar el paquete .deb
-          sudo dpkg -i cri-dockerd.deb
-          
-          # Iniciar y habilitar el servicio de cri-dockerd
-          sudo systemctl daemon-reload
-          sudo systemctl enable cri-docker.socket
-          sudo systemctl start cri-docker.socket
-      - name: Install CNI Plugins
-        run: |
-          CNI_PLUGINS_VERSION="v1.4.0"
-          sudo mkdir -p /opt/cni/bin
-          curl -L -o cni-plugins.tgz "https://github.com/containernetworking/plugins/releases/download/${CNI_PLUGINS_VERSION}/cni-plugins-linux-amd64-${CNI_PLUGINS_VERSION}.tgz"
-          sudo tar -xzf cni-plugins.tgz -C /opt/cni/bin
-      - name: Install Minikube
-        run: |
-          curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64
-          sudo install minikube-linux-amd64 /usr/local/bin/minikube
-          minikube start --driver=none
-      - name: Login to GHCR
-        uses: docker/login-action@v3
+      - name: Set up image name
+        run: echo "IMAGE_NAME=${GITHUB_REPOSITORY,,}" >> $GITHUB_ENV
+
+      # Opción 1: Usar Minikube con action predefinida (RECOMENDADO)
+      - name: Start Minikube
+        uses: medyagh/setup-minikube@v0.0.16
         with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-      - name: Use the Kube config
-        run: |
-          echo "${{ secrets.KUBE_CONFIG }}" | base64 -d > ~/.kube/config
-          chmod 600 ~/.kube/config
-          kubectl config use-context ${{ secrets.KUBE_CONTEXT }}
-      - name: Wait for Kubernetes to be ready
-        run: |
-          kubectl wait --for=condition=ready pod -l app=minikube --timeout=300s
+          minikube-version: 1.32.0
+          kubernetes-version: v1.28.0
+          driver: docker
+
       - name: Deploy to Minikube
         run: |
-          kubectl apply -f k8s/
-      - name: Wait for deployment
+          # Sustituir variables en los manifiestos K8s
+          export IMAGE_NAME=ghcr.io/${{ env.IMAGE_NAME }}:${{ github.sha }}
+          export KUBE_NAMESPACE=${{ env.KUBE_NAMESPACE }}
+          export APP_NAME=${{ env.APP_NAME }}
+          
+          # Crear namespace
+          kubectl create namespace $KUBE_NAMESPACE --dry-run=client -o yaml | kubectl apply -f -
+          
+          # Aplicar manifiestos con substitución de variables
+          envsubst < k8s/deployment.yaml | kubectl apply -n $KUBE_NAMESPACE -f -
+          envsubst < k8s/service.yaml | kubectl apply -n $KUBE_NAMESPACE -f -
+          
+          # Esperar a que el deployment esté listo
+          kubectl rollout status deployment/$APP_NAME -n $KUBE_NAMESPACE --timeout=300s
+
+      - name: Verify deployment
         run: |
-          kubectl wait --for=condition=available --timeout=300s deployment/pipeline-crud
+          kubectl get pods -n ${{ env.KUBE_NAMESPACE }}
+          kubectl get services -n ${{ env.KUBE_NAMESPACE }}
+
+      # Health check opcional
+      - name: Health check
+        run: |
+          kubectl wait --for=condition=ready pod -l app=${{ env.APP_NAME }} -n ${{ env.KUBE_NAMESPACE }} --timeout=300s
+          echo "Deployment successful!"
+
+  # Alternativa: Deploy a un cluster externo (si tienes KUBE_CONFIG)
+  deploy-external:
+    runs-on: ubuntu-latest
+    needs: [build, security-scan]
+    if: github.ref == 'refs/heads/master' && github.event_name == 'push'
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up kubectl
+        uses: azure/setup-kubectl@v3
+        with:
+          version: 'v1.28.0'
+
+      - name: Configure kubectl
+        run: |
+          if [ -n "${{ secrets.KUBE_CONFIG }}" ]; then
+            echo "${{ secrets.KUBE_CONFIG }}" | base64 -d > ~/.kube/config
+            chmod 600 ~/.kube/config
+            kubectl config use-context ${{ secrets.KUBE_CONTEXT }}
+          else
+            echo "KUBE_CONFIG secret not found, skipping external deployment"
+            exit 0
+          fi
+
+      - name: Deploy to external cluster
+        run: |
+          export IMAGE_NAME=ghcr.io/${GITHUB_REPOSITORY,,}:${{ github.sha }}
+          export KUBE_NAMESPACE=${{ env.KUBE_NAMESPACE }}
+          export APP_NAME=${{ env.APP_NAME }}
+          
+          kubectl create namespace $KUBE_NAMESPACE --dry-run=client -o yaml | kubectl apply -f -
+          envsubst < k8s/deployment.yaml | kubectl apply -n $KUBE_NAMESPACE -f -
+          envsubst < k8s/service.yaml | kubectl apply -n $KUBE_NAMESPACE -f -
+          kubectl rollout status deployment/$APP_NAME -n $KUBE_NAMESPACE --timeout=600s
