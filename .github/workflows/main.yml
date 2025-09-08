@@ -173,7 +173,9 @@ jobs:
           # Sustituir variables en los manifiestos K8s
           export IMAGE_NAME=ghcr.io/${{ env.IMAGE_NAME }}:${{ github.sha }}
           export KUBE_NAMESPACE=$(echo "${{ env.KUBE_NAMESPACE }}" | tr '_' '-')
-          export APP_NAME=${{ env.APP_NAME }}
+          
+          # La variable APP_NAME debe ser compatible con los nombres de recursos de Kubernetes
+          export KUBE_APP_NAME=$(echo "${{ env.APP_NAME }}" | tr '[:upper:]' '[:lower:]' | tr -s '_' '-' | tr -s '.' '-')
           
           # Crear namespace
           kubectl create namespace $KUBE_NAMESPACE --dry-run=client -o yaml | kubectl apply -f -
@@ -183,7 +185,7 @@ jobs:
           envsubst < k8s/app-service.yml | kubectl apply -n $KUBE_NAMESPACE -f -
           
           # Esperar a que el deployment esté listo
-          kubectl rollout status deployment/$APP_NAME -n $KUBE_NAMESPACE --timeout=300s
+          kubectl rollout status deployment/$KUBE_APP_NAME -n $KUBE_NAMESPACE --timeout=300s
 
       - name: Verify deployment
         run: |
@@ -195,5 +197,5 @@ jobs:
       - name: Health check
         run: |
           KUBE_NAMESPACE=$(echo "${{ env.KUBE_NAMESPACE }}" | tr '_' '-')
-          kubectl wait --for=condition=ready pod -l app=${{ env.APP_NAME }} -n $KUBE_NAMESPACE --timeout=300s
+          kubectl wait --for=condition=ready pod -l app=$KUBE_APP_NAME -n $KUBE_NAMESPACE --timeout=300s
           echo "Deployment successful!"
