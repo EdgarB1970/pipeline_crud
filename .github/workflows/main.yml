@@ -144,7 +144,7 @@ jobs:
           name: trivy-security-report
           path: trivy-report.txt
 
-  # Job de despliegue en Kubernetes (Minikube)
+  # 🔧 SOLUCION: Job de despliegue simplificado sin Minikube local
   deploy-dev:
     runs-on: ubuntu-latest
     needs: [build, security-scan]
@@ -154,13 +154,7 @@ jobs:
       - name: Set up image name
         run: echo "IMAGE_NAME=${GITHUB_REPOSITORY,,}" >> $GITHUB_ENV
 
-      - name: Login to GHCR
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
+      # Opción 1: Usar Minikube con action predefinida (RECOMENDADO)
       - name: Start Minikube
         uses: medyagh/setup-minikube@v0.0.16
         with:
@@ -168,42 +162,64 @@ jobs:
           kubernetes-version: v1.28.0
           driver: docker
 
-      - name: Test envsubst
-        run: |
-          export IMAGE_NAME=ghcr.io/${{ env.IMAGE_NAME }}:${{ github.sha }}
-          export KUBE_NAMESPACE=pipeline-crud-master
-          export KUBE_APP_NAME=pipeline-crud
-          
-          echo "Variables exportadas:"
-          echo "IMAGE_NAME=$IMAGE_NAME"
-          echo "KUBE_NAMESPACE=$KUBE_NAMESPACE" 
-          echo "KUBE_APP_NAME=$KUBE_APP_NAME"
-          echo ""
-          echo "Contenido original del app-deployment.yml:"
-          head -20 k8s/app-deployment.yml
-          echo ""
-          echo "Contenido después de envsubst:"
-          envsubst < k8s/app-deployment.yml | head -20
-
       - name: Deploy to Minikube
         run: |
+          # Sustituir variables en los manifiestos K8s
           export IMAGE_NAME=ghcr.io/${{ env.IMAGE_NAME }}:${{ github.sha }}
-          export KUBE_NAMESPACE=pipeline-crud-master
-          export KUBE_APP_NAME=pipeline-crud
+          export KUBE_NAMESPACE=${{ env.KUBE_NAMESPACE }}
+          export APP_NAME=${{ env.APP_NAME }}
           
+          # Crear namespace
           kubectl create namespace $KUBE_NAMESPACE --dry-run=client -o yaml | kubectl apply -f -
           
-          envsubst < k8s/app-deployment.yml | kubectl apply -n $KUBE_NAMESPACE -f -
-          envsubst < k8s/app-service.yml | kubectl apply -n $KUBE_NAMESPACE -f -
+          # Aplicar manifiestos con substitución de variables
+          envsubst < k8s/deployment.yaml | kubectl apply -n $KUBE_NAMESPACE -f -
+          envsubst < k8s/service.yaml | kubectl apply -n $KUBE_NAMESPACE -f -
           
-          kubectl rollout status deployment/$KUBE_APP_NAME -n $KUBE_NAMESPACE --timeout=300s
+          # Esperar a que el deployment esté listo
+          kubectl rollout status deployment/$APP_NAME -n $KUBE_NAMESPACE --timeout=300s
 
       - name: Verify deployment
         run: |
-          kubectl get pods -n pipeline-crud-master
-          kubectl get services -n pipeline-crud-master
+          kubectl get pods -n ${{ env.KUBE_NAMESPACE }}
+          kubectl get services -n ${{ env.KUBE_NAMESPACE }}
 
+      # Health check opcional
       - name: Health check
         run: |
-          kubectl wait --for=condition=ready pod -l app=pipeline-crud -n pipeline-crud-master --timeout=300s
+          kubectl wait --for=condition=ready pod -l app=${{ env.APP_NAME }} -n ${{ env.KUBE_NAMESPACE }} --timeout=300s
           echo "Deployment successful!"
+
+  # Alternativa: Deploy a un cluster externo (si tienes KUBE_CONFIG)
+  deploy-external:
+    runs-on: ubuntu-latest
+    needs: [build, security-scan]
+    if: github.ref == 'refs/heads/master' && github.event_name == 'push'
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up kubectl
+        uses: azure/setup-kubectl@v3
+        with:
+          version: 'v1.28.0'
+
+      - name: Configure kubectl
+        run: |
+          if [ -n "${{ secrets.KUBE_CONFIG }}" ]; then
+            echo "${{ secrets.KUBE_CONFIG }}" | base64 -d > ~/.kube/config
+            chmod 600 ~/.kube/config
+            kubectl config use-context ${{ secrets.KUBE_CONTEXT }}
+          else
+            echo "KUBE_CONFIG secret not found, skipping external deployment"
+            exit 0
+          fi
+
+      - name: Deploy to external cluster
+        run: |
+          export IMAGE_NAME=ghcr.io/${GITHUB_REPOSITORY,,}:${{ github.sha }}
+          export KUBE_NAMESPACE=${{ env.KUBE_NAMESPACE }}
+          export APP_NAME=${{ env.APP_NAME }}
+          
+          kubectl create namespace $KUBE_NAMESPACE --dry-run=client -o yaml | kubectl apply -f -
+          envsubst < k8s/deployment.yaml | kubectl apply -n $KUBE_NAMESPACE -f -
+          envsubst < k8s/service.yaml | kubectl apply -n $KUBE_NAMESPACE -f -
+          kubectl rollout status deployment/$APP_NAME -n $KUBE_NAMESPACE --timeout=600s
