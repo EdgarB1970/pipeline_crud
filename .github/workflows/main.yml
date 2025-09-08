@@ -161,6 +161,14 @@ jobs:
           # Crear la variable KUBE_APP_NAME y exportarla
           echo "KUBE_APP_NAME=$SAFE_REPO_NAME" >> $GITHUB_ENV
 
+      - name: Create Secrets for App
+        run: |
+          kubectl create secret generic spring-boot-secrets -n ${{ env.KUBE_NAMESPACE }} \
+            --from-literal=CASSANDRA_USER=${{ secrets.CASSANDRA_USER }} \
+            --from-literal=CASSANDRA_PASSWORD=${{ secrets.CASSANDRA_PASSWORD }} \
+            --from-literal=KAFKA_SASL_USERNAME=${{ secrets.KAFKA_SASL_USERNAME }} \
+            --from-literal=KAFKA_SASL_PASSWORD=${{ secrets.KAFKA_SASL_PASSWORD }}
+
       - name: Start Minikube
         uses: medyagh/setup-minikube@v0.0.16
         with:
