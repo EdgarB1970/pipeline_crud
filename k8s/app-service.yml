@@ -1,11 +1,13 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: spring-boot-app
+  name: ${{ env.APP_NAME }}
+  #name: spring-boot-app  GITLAB
 spec:
   type: ClusterIP
   selector:
-    app: spring-boot-app
+    app: ${{ env.APP_NAME }}
+    #app: spring-boot-app GITLAB
   ports:
     - protocol: TCP
       port: 8081
