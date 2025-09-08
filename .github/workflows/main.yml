@@ -204,5 +204,5 @@ jobs:
         run: |
           kubectl apply -f k8s/
       - name: Wait for deployment
-          run: |
-            kubectl wait --for=condition=available --timeout=300s deployment/pipeline-crud
+        run: |
+          kubectl wait --for=condition=available --timeout=300s deployment/pipeline-crud
