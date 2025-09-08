@@ -1,28 +1,22 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  #name: spring-boot-app  SE USA EN GITLAB
-  name: ${{ KUBE_APP_NAME }} # Ahora usa la variable APP_NAME
+  name: ${KUBE_APP_NAME}
   labels:
-    app: ${{ KUBE_APP_NAME }}
-    #app: spring-boot-app gitlab
+    app: ${KUBE_APP_NAME}
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: ${{ KUBE_APP_NAME }}
-      #app: spring-boot-app GITLAB
+      app: ${KUBE_APP_NAME}
   template:
     metadata:
       labels:
-        app: ${{ KUBE_APP_NAME }}
-        #app: spring-boot-app  GITLAB
+        app: ${KUBE_APP_NAME}
     spec:
       containers:
-        - name: ${{ KUBE_APP_NAME }}
-        #- name: spring-boot-app GITLAB
-          #image: $CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA   -->gitlab
-          image: $(IMAGE_NAME) # ES PARA GITHIB
+        - name: ${KUBE_APP_NAME}
+          image: ${IMAGE_NAME}
           ports:
             - containerPort: 8081
           env:
