@@ -179,8 +179,8 @@ jobs:
           kubectl create namespace $KUBE_NAMESPACE --dry-run=client -o yaml | kubectl apply -f -
           
           # Aplicar manifiestos con substitución de variables
-          envsubst < k8s/deployment.yaml | kubectl apply -n $KUBE_NAMESPACE -f -
-          envsubst < k8s/service.yaml | kubectl apply -n $KUBE_NAMESPACE -f -
+          envsubst < k8s/app-deployment.yml | kubectl apply -n $KUBE_NAMESPACE -f -
+          envsubst < k8s/app-service.yml | kubectl apply -n $KUBE_NAMESPACE -f -
           
           # Esperar a que el deployment esté listo
           kubectl rollout status deployment/$APP_NAME -n $KUBE_NAMESPACE --timeout=300s
