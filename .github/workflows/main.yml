@@ -153,11 +153,13 @@ jobs:
       - name: Set up image name
         run: echo "IMAGE_NAME=${GITHUB_REPOSITORY,,}" >> $GITHUB_ENV
 
-      - name: Create Kube Namespace Variable
+      - name: Create Kube Namespace and Variable Name Variables
         run: |
           SAFE_REPO_NAME=$(echo "${{ github.event.repository.name }}" | tr '[:upper:]' '[:lower:]' | tr '_' '-')
           SAFE_REF_NAME=$(echo "${{ github.ref_name }}" | tr '[:upper:]' '[:lower:]' | tr '_' '-')
           echo "KUBE_NAMESPACE=$SAFE_REPO_NAME-$SAFE_REF_NAME" >> $GITHUB_ENV
+       # Crear la variable KUBE_APP_NAME y exportarla
+          echo "KUBE_APP_NAME=$SAFE_REPO_NAME" >> $GITHUB_ENV
 
       - name: Start Minikube
         uses: medyagh/setup-minikube@v0.0.16
@@ -169,15 +171,16 @@ jobs:
       - name: Deploy to Minikube
         run: |
           export IMAGE_NAME=ghcr.io/${{ env.IMAGE_NAME }}:${{ github.sha }}
+          export KUBE_APP_NAME=${{ env.KUBE_APP_NAME }}
           export KUBE_NAMESPACE=${{ env.KUBE_NAMESPACE }}
-          export APP_NAME=${{ env.APP_NAME }}
+          
           
           kubectl create namespace $KUBE_NAMESPACE --dry-run=client -o yaml | kubectl apply -f -
           
           envsubst < k8s/app-deployment.yml | kubectl apply -n $KUBE_NAMESPACE -f -
           envsubst < k8s/app-service.yml | kubectl apply -n $KUBE_NAMESPACE -f -
           
-          kubectl rollout status deployment/$APP_NAME -n $KUBE_NAMESPACE --timeout=300s
+          kubectl rollout status deployment/$KUBE_APP_NAME -n $KUBE_NAMESPACE --timeout=300s
 
       - name: Verify deployment
         run: |
@@ -186,5 +189,5 @@ jobs:
 
       - name: Health check
         run: |
-          kubectl wait --for=condition=ready pod -l app=${{ env.APP_NAME }} -n ${{ env.KUBE_NAMESPACE }} --timeout=300s
+          kubectl wait --for=condition=ready pod -l app=${{ env.KUBE_APP_NAME }} -n ${{ env.KUBE_NAMESPACE }} --timeout=300s
           echo "Deployment successful!"
