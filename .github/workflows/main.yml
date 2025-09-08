@@ -187,6 +187,15 @@ jobs:
           kubectl get pods -n ${{ env.KUBE_NAMESPACE }}
           kubectl get services -n ${{ env.KUBE_NAMESPACE }}
 
+        # Este paso se ejecuta ANTES del Health Check para capturar los logs
+         # en caso de fallo.
+      - name: Get Pod Logs
+        if: always()
+        run: |
+          POD_NAME=$(kubectl get pods -n ${{ env.KUBE_NAMESPACE }} -l app=${{ env.KUBE_APP_NAME }} -o jsonpath="{.items[0].metadata.name}")
+          kubectl describe pod $POD_NAME -n ${{ env.KUBE_NAMESPACE }}
+          kubectl logs $POD_NAME -n ${{ env.KUBE_NAMESPACE }}
+
       - name: Health check
         run: |
           kubectl wait --for=condition=ready pod -l app=${{ env.KUBE_APP_NAME }} -n ${{ env.KUBE_NAMESPACE }} --timeout=300s
