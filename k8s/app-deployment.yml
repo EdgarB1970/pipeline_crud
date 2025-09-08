@@ -16,7 +16,8 @@ spec:
     spec:
       containers:
         - name: spring-boot-app
-          image: $CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA
+          #image: $CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA
+          image: $(IMAGE_NAME)
           ports:
             - containerPort: 8081
           env:
