@@ -189,37 +189,3 @@ jobs:
         run: |
           kubectl wait --for=condition=ready pod -l app=${{ env.APP_NAME }} -n ${{ env.KUBE_NAMESPACE }} --timeout=300s
           echo "Deployment successful!"
-
-  # Alternativa: Deploy a un cluster externo (si tienes KUBE_CONFIG)
-  deploy-external:
-    runs-on: ubuntu-latest
-    needs: [build, security-scan]
-    if: github.ref == 'refs/heads/master' && github.event_name == 'push'
-    steps:
-      - uses: actions/checkout@v4
-      - name: Set up kubectl
-        uses: azure/setup-kubectl@v3
-        with:
-          version: 'v1.28.0'
-
-      - name: Configure kubectl
-        run: |
-          if [ -n "${{ secrets.KUBE_CONFIG }}" ]; then
-            echo "${{ secrets.KUBE_CONFIG }}" | base64 -d > ~/.kube/config
-            chmod 600 ~/.kube/config
-            kubectl config use-context ${{ secrets.KUBE_CONTEXT }}
-          else
-            echo "KUBE_CONFIG secret not found, skipping external deployment"
-            exit 0
-          fi
-
-      - name: Deploy to external cluster
-        run: |
-          export IMAGE_NAME=ghcr.io/${GITHUB_REPOSITORY,,}:${{ github.sha }}
-          export KUBE_NAMESPACE=${{ env.KUBE_NAMESPACE }}
-          export APP_NAME=${{ env.APP_NAME }}
-          
-          kubectl create namespace $KUBE_NAMESPACE --dry-run=client -o yaml | kubectl apply -f -
-          envsubst < k8s/deployment.yaml | kubectl apply -n $KUBE_NAMESPACE -f -
-          envsubst < k8s/service.yaml | kubectl apply -n $KUBE_NAMESPACE -f -
-          kubectl rollout status deployment/$APP_NAME -n $KUBE_NAMESPACE --timeout=600s
