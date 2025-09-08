@@ -166,6 +166,8 @@ jobs:
           sudo install -o root -g root -m 0755 cri-dockerd/cri-dockerd /usr/local/bin/cri-dockerd
           curl -L -o cri-dockerd.service https://raw.githubusercontent.com/Mirantis/cri-dockerd/master/cri-dockerd.service
           sudo install -o root -g root -m 0755 cri-dockerd.service /etc/systemd/system/cri-dockerd.service
+          curl -L -o cri-docker.socket https://raw.githubusercontent.com/Mirantis/cri-dockerd/master/cri-docker.socket
+          sudo install -o root -g root -m 0755 cri-docker.socket /etc/systemd/system/cri-docker.socket
       - name: Install CNI Plugins
         run: |
           CNI_PLUGINS_VERSION="v1.4.0"
