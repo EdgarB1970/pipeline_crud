@@ -148,7 +148,7 @@ jobs:
   # Job de despliegue en Kubernetes (Minikube)
   deploy-dev:
     runs-on: ubuntu-latest
-    needs: [ build ]
+    needs: [build]
     if: github.ref == 'refs/heads/master'
     steps:
       - uses: actions/checkout@v4
@@ -158,9 +158,29 @@ jobs:
           sudo apt-get install -y conntrack
           curl -LO https://dl.k8s.io/release/v1.30.0/bin/linux/amd64/crictl
           sudo install -o root -g root -m 0755 crictl /usr/local/bin/crictl
-      - name: Install cri-dockerd and CNI Plugins
+      - name: Install cri-dockerd
         run: |
-          curl -fsSL https://raw.githubusercontent.com/root/install_cri_dockerd.sh | sudo sh
+          # Instalar las dependencias necesarias para la instalación de cri-dockerd
+          sudo apt-get install -y libseccomp2
+          
+          # Descargar el paquete .deb para cri-dockerd
+          VERSION="0.3.11"
+          DEB_URL="https://github.com/Mirantis/cri-dockerd/releases/download/v${VERSION}/cri-dockerd_0.3.11.3-0.debian-bullseye_amd64.deb"
+          curl -L -o cri-dockerd.deb "$DEB_URL"
+          
+          # Instalar el paquete .deb
+          sudo dpkg -i cri-dockerd.deb
+          
+          # Iniciar y habilitar el servicio de cri-dockerd
+          sudo systemctl daemon-reload
+          sudo systemctl enable cri-docker.socket
+          sudo systemctl start cri-docker.socket
+      - name: Install CNI Plugins
+        run: |
+          CNI_PLUGINS_VERSION="v1.4.0"
+          sudo mkdir -p /opt/cni/bin
+          curl -L -o cni-plugins.tgz "https://github.com/containernetworking/plugins/releases/download/${CNI_PLUGINS_VERSION}/cni-plugins-linux-amd64-${CNI_PLUGINS_VERSION}.tgz"
+          sudo tar -xzf cni-plugins.tgz -C /opt/cni/bin
       - name: Install Minikube
         run: |
           curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64
@@ -184,5 +204,5 @@ jobs:
         run: |
           kubectl apply -f k8s/
       - name: Wait for deployment
-        run: |
-          kubectl wait --for=condition=available --timeout=300s deployment/pipeline-crud
+          run: |
+            kubectl wait --for=condition=available --timeout=300s deployment/pipeline-crud
