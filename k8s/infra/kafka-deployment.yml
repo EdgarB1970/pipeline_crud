@@ -28,6 +28,8 @@ spec:
               value: "PLAINTEXT://kafka:9092"
             - name: KAFKA_PROCESS_ROLES
               value: "broker,controller"
+            - name: KAFKA_CLUSTER_ID
+              value: "T5k_gA55Q6aE-C9n4J9fQ"
             - name: KAFKA_CFG_NODE_ID
               value: "1"
             - name: KAFKA_CFG_PROCESS_ROLES
