@@ -14,8 +14,9 @@ env:
   # Variables compartidas por todos los jobs
   APP_NAME: ${{ github.event.repository.name }}
   APP_VERSION: ${{ github.sha }}
-  KUBE_NAMESPACE: ${{ github.event.repository.name }}-${{ github.ref_name }}
+  KUBE_NAMESPACE: ${{ github.event.repository.name | replace('_', '-') | lower }}-${{ github.ref_name }}
   CI_REGISTRY_IMAGE: docker.pkg.github.com/${{ github.repository }}
+
 
 jobs:
   # Job de validación (Maven)
