@@ -22,3 +22,5 @@ data:
     listener.security.protocol.map=CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
     sasl.mechanism.inter.broker.protocol=PLAIN
     sasl.enabled.mechanisms=PLAIN
+    
+    log.dirs=/var/lib/kafka/data
