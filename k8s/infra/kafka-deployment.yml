@@ -52,7 +52,6 @@ spec:
               value: "CONTROLLER"
             - name: KAFKA_INTER_BROKER_LISTENER_NAME
               value: "PLAINTEXT"
-
       volumes:
         - name: kafka-config-volume
           configMap:
