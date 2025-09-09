@@ -1,0 +1,27 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kafka-config
+  labels:
+    app: kafka
+data:
+  server.properties: |
+    # Basic Broker Configuration
+    broker.id=1
+    listeners=PLAINTEXT://:9092
+    advertised.listeners=PLAINTEXT://kafka:9092
+
+    # Cluster Configuration
+    process.roles=broker,controller
+    controller.listener.names=CONTROLLER
+    controller.quorum.voters=1@127.0.0.1:9093
+    inter.broker.listener.name=PLAINTEXT
+    cluster.id=T5k_gA55Q6aE-C9n4J9fQ
+
+    # Zookeeper configuration
+    zookeeper.connect=zookeeper:2181
+
+    # Security
+    listener.security.protocol.map=CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+    sasl.mechanism.inter.broker.protocol=PLAIN
+    sasl.enabled.mechanisms=PLAIN
