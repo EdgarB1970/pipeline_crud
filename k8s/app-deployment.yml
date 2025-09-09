@@ -50,3 +50,5 @@ spec:
                 secretKeyRef:
                   name: spring-boot-secrets
                   key: KAFKA_SASL_PASSWORD
+      imagePullSecrets:
+        - name: ghcr-secret
