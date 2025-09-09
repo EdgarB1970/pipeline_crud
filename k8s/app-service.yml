@@ -1,12 +1,12 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: pipeline_crud
+  name: pipeline-crud
   #name: spring-boot-app  GITLAB
 spec:
   type: ClusterIP
   selector:
-    app: pipeline_crud
+    app: pipeline-crud
     #app: spring-boot-app GITLAB
   ports:
     - protocol: TCP

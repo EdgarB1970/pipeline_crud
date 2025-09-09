@@ -2,24 +2,24 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   #name: spring-boot-app  SE USA EN GITLAB
-  name: pipeline_crud # Ahora usa la variable APP_NAME
+  name: pipeline-crud # Ahora usa la variable APP_NAME
   labels:
-    app: pipeline_crud
+    app: pipeline-crud
     #app: spring-boot-app gitlab
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: pipeline_crud
+      app: pipeline-crud
       #app: spring-boot-app GITLAB
   template:
     metadata:
       labels:
-        app: pipeline_crud
+        app: pipeline-crud
         #app: spring-boot-app  GITLAB
     spec:
       containers:
-        - name: pipeline_crud
+        - name: pipeline-crud
         #- name: spring-boot-app GITLAB
           #image: $CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA   -->gitlab
           image: $IMAGE_NAME # ES PARA GITHIB
