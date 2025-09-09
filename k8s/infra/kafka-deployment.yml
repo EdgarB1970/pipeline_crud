@@ -19,6 +19,14 @@ spec:
           image: confluentinc/cp-kafka:latest
           ports:
             - containerPort: 9092
+          command: ["/bin/sh", "-c"]
+          args:
+            - >
+              if [ ! -d "/var/lib/kafka/data" ]; then
+                echo "Formateando el directorio de datos de Kafka..."
+                kafka-storage.sh format -t T5k_gA55Q6aE-C9n4J9fQ -c /etc/kafka/server.properties;
+              fi;
+              kafka-server-start.sh /etc/kafka/server.properties
           volumeMounts:
             - name: kafka-config-volume
               mountPath: /etc/kafka/server.properties
