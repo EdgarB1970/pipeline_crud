@@ -24,7 +24,7 @@ spec:
               mountPath: /etc/kafka/server.properties
               subPath: server.properties
           env:
-            - name: KAFKA_CLUSTER_ID
+            - name: CLUSTER_ID
               value: "T5k_gA55Q6aE-C9n4J9fQ"
             - name: KAFKA_BROKER_ID
               value: "1"
