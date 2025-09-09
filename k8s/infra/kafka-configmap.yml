@@ -18,9 +18,6 @@ data:
     inter.broker.listener.name=PLAINTEXT
     cluster.id=T5k_gA55Q6aE-C9n4J9fQ
 
-    # Zookeeper configuration
-    zookeeper.connect=zookeeper:2181
-
     # Security
     listener.security.protocol.map=CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
     sasl.mechanism.inter.broker.protocol=PLAIN
