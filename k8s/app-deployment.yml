@@ -22,8 +22,8 @@ spec:
         - name: pipeline-crud
         #- name: spring-boot-app GITLAB
           #image: $CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA   -->gitlab
-          image: pipeline-crud:local
-          imagePullPolicy: Never
+          image: ${IMAGE_NAME}
+          imagePullPolicy: Always
           ports:
             - containerPort: 8081
           env:
@@ -51,3 +51,5 @@ spec:
                 secretKeyRef:
                   name: spring-boot-secrets
                   key: KAFKA_SASL_PASSWORD
+      imagePullSecrets:
+        - name: ghcr-secret
