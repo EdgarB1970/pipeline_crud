@@ -28,7 +28,7 @@ spec:
             - containerPort: 8081
           env:
             - name: SPRING_PROFILES_ACTIVE
-              value: prod
+              value: dev
             - name: CASSANDRA_USER
               valueFrom:
                 secretKeyRef:
@@ -51,5 +51,3 @@ spec:
                 secretKeyRef:
                   name: spring-boot-secrets
                   key: KAFKA_SASL_PASSWORD
-      imagePullSecrets:
-        - name: ghcr-secret
