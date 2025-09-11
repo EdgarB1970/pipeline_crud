@@ -27,10 +27,6 @@ spec:
                 kafka-storage.sh format -t T5k_gA55Q6aE-C9n4J9fQ -c /etc/kafka/server.properties;
               fi;
               kafka-server-start.sh /etc/kafka/server.properties
-          volumeMounts:
-            - name: kafka-config-volume
-              mountPath: /etc/kafka/server.properties
-              subPath: server.properties
           env:
             - name: CLUSTER_ID
               value: "T5k_gA55Q6aE-C9n4J9fQ"
@@ -52,8 +48,3 @@ spec:
               value: "CONTROLLER"
             - name: KAFKA_INTER_BROKER_LISTENER_NAME
               value: "PLAINTEXT"
-      volumes:
-        - name: kafka-config-volume
-          configMap:
-            name: kafka-config
-            #q
